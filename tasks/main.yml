@@ -1,0 +1,31 @@
+---
+- name: Ensure we use the correct distribution
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - src: distribution.list.j2
+      dest: "/etc/apt/sources.list.d/{{ podman_apt_distribution }}.list"
+    - src: distribution.pref.j2
+      dest: "/etc/apt/preferences.d/{{ podman_apt_distribution }}.pref"
+  notify:
+    - systemd_daemon_reload
+    - apt_update
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+- name: Ensure podman is installed
+  ansible.builtin.apt:
+    name: podman
+    default_release: "{{ podman_apt_distribution }}"
+
+- name: Ensure podmain quadlets are available
+  ansible.builtin.include_tasks:
+    file: quadlet.yml
+  loop: "{{ podman_containers }}"
+  loop_control:
+    loop_var: container

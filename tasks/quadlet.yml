@@ -1,0 +1,15 @@
+---
+- name: Ensure quadlet is available for container
+  ansible.builtin.template:
+    src: quadlet.j2
+    dest: "/etc/containers/systemd/{{ container.name }}.{{ container.type | default('container') }}"
+    owner: root
+    group: root
+    mode: 0755
+  register: ql
+
+- name: Ensure container is in the desired state
+  ansible.builtin.systemd_service:
+    name: "{{ container.name }}"
+    daemon_reload: "{{ ql.changed }}"
+    state: "{{ ql.changed | ternary('restarted',  container.state | default('started')) }}"

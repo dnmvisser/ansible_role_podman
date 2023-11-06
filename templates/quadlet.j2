@@ -1,0 +1,45 @@
+# {{ ansible_managed }}
+[Unit]
+Description={{ container.description | default(container.name) }}
+After=local-fs.target
+
+[Container]
+Image={{ container.image }}:{{ container.version | default('latest') }}
+
+{% if container.exec is defined %}
+Exec={{ container.exec }}
+{% endif %}
+
+{% if container.ports is defined %}
+{% for port in container.ports %}
+PublishPort={{ port }}
+{% endfor %}
+{% endif %}
+
+ContainerName={{ container.name }}
+
+{% if container.env is defined %}
+{% for k, v in container.env.items() %}
+Environment={{ k }}="{{ v }}"
+{% endfor %}
+{% endif %}
+
+{% if container.volumes is defined %}
+{% for volume in container.volumes %}
+Volume={{ volume }}
+{% endfor %}
+{% endif %}
+
+
+[Service]
+{% if container.memory is defined %}
+MemoryAccounting=1
+# FIXME there are many types of memory that can be set:
+# https://www.freedesktop.org/software/systemd/man/latest/systemd.resource-control.html
+# We pick MemoryHigh as that seems to closest fit...
+MemoryHigh={{ container.memory | human_to_bytes }}
+{% endif %}
+
+
+[Install]
+WantedBy=multi-user.target default.target
